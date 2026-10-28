@@ -4,49 +4,84 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>whereami</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  /* Same token structure as pursecast, with its own accent. */
+  /* Same system as rannikon: named easings, a shadow scale, and semantic
+     colour sets that each carry a surface and a line. */
   :root {
-    --b: #4338ca;
-    --b-hover: #3730a3;
-    --bt: #e0e7ff;
-    --ink: #14181f;
-    --ink2: #334155;
-    --muted: #6b7380;
-    --line: #e3e7ec;
-    --line2: #cbd3dc;
-    --bg: #f5f7fa;
+    --font-ui: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-display: 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif;
+
+    --brand: #3949c4;
+    --brand-hover: #2d3aa3;
+    --brand-tint: #e8eafb;
+    --brand-text: #2f3da8;
+    --on-brand: #fff;
+
+    --ink: #171a21;
+    --ink2: #39404d;
+    --muted: #6d7482;
+    --line: #e5e7ec;
+    --line2: #cfd3dc;
+    --bg: #f6f7f9;
     --card: #fff;
-    --soft: #eef1f5;
-    --sun: #f5a524;
-    --neg: #dc2626;
-    --pos: #15803d;
-    --pos-bg: #e9f7ee;
-    --warn-bg: #fdf6e7;
-    --on-b: #fff;
-    --glass: rgba(255, 255, 255, 0.94);
+    --soft: #f1f2f6;
+    --glass: rgba(255, 255, 255, 0.86);
+
+    --green: #2d6a3e; --green-bg: #e8f4ec; --green-line: #c3e1cd;
+    --orange: #b45309; --orange-bg: #fff3e2; --orange-line: #f5d2a3;
+    --blue: #1d5fbf; --blue-bg: #e9f1fd; --blue-line: #c3d8f6;
+    --slate: #475569; --slate-bg: #f1f5f9; --slate-line: #d5dde6;
+    --red: #c0392b; --red-bg: #fdecea; --red-line: #f3c4be;
+
+    --shadow-xs: 0 1px 2px rgba(23, 26, 33, 0.06);
+    --shadow-sm: 0 1px 2px rgba(23, 26, 33, 0.04), 0 4px 14px -6px rgba(23, 26, 33, 0.1);
+    --shadow-md: 0 18px 40px -20px rgba(23, 26, 33, 0.28);
+    --shadow-pop: 0 24px 60px -20px rgba(18, 22, 30, 0.35);
+
+    --spring: cubic-bezier(0.2, 0.9, 0.3, 1.2);
+    --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+    --side-w: 236px;
+    --top-h: 62px;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme='light']) {
-      --b: #a5b4fc; --b-hover: #c7d2fe; --bt: #1d2142;
-      --ink: #e7eaee; --ink2: #cbd5e1; --muted: #97a0ab;
-      --line: #262c34; --line2: #38414b;
-      --bg: #0d1015; --card: #151a20; --soft: #1c222a;
-      --sun: #f7b541; --neg: #f87171; --pos: #4ade80;
-      --pos-bg: #112a1b; --warn-bg: #251f0e;
-      --on-b: #10142b; --glass: rgba(21, 26, 32, 0.92);
+      --brand: #8d9bff; --brand-hover: #aab4ff; --brand-tint: #1d2142;
+      --brand-text: #aab4ff; --on-brand: #11142e;
+      --ink: #e7eaee; --ink2: #c3cad4; --muted: #929aa7;
+      --line: #252b33; --line2: #39414c;
+      --bg: #0c0f14; --card: #141920; --soft: #1b212a;
+      --glass: rgba(20, 25, 32, 0.86);
+      --green: #58c97a; --green-bg: #11291a; --green-line: #1f4a2e;
+      --orange: #e0a44a; --orange-bg: #2a2110; --orange-line: #4d3a16;
+      --blue: #74a6f5; --blue-bg: #121f33; --blue-line: #23395c;
+      --slate: #9aa6b5; --slate-bg: #1a1f27; --slate-line: #333c48;
+      --red: #ef6f62; --red-bg: #2c1613; --red-line: #532722;
+      --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px -6px rgba(0, 0, 0, 0.6);
+      --shadow-md: 0 18px 40px -20px rgba(0, 0, 0, 0.8);
+      --shadow-pop: 0 24px 60px -20px rgba(0, 0, 0, 0.9);
       color-scheme: dark;
     }
   }
   :root[data-theme='dark'] {
-    --b: #a5b4fc; --b-hover: #c7d2fe; --bt: #1d2142;
-    --ink: #e7eaee; --ink2: #cbd5e1; --muted: #97a0ab;
-    --line: #262c34; --line2: #38414b;
-    --bg: #0d1015; --card: #151a20; --soft: #1c222a;
-    --sun: #f7b541; --neg: #f87171; --pos: #4ade80;
-    --pos-bg: #112a1b; --warn-bg: #251f0e;
-    --on-b: #10142b; --glass: rgba(21, 26, 32, 0.92);
+    --brand: #8d9bff; --brand-hover: #aab4ff; --brand-tint: #1d2142;
+    --brand-text: #aab4ff; --on-brand: #11142e;
+    --ink: #e7eaee; --ink2: #c3cad4; --muted: #929aa7;
+    --line: #252b33; --line2: #39414c;
+    --bg: #0c0f14; --card: #141920; --soft: #1b212a;
+    --glass: rgba(20, 25, 32, 0.86);
+    --green: #58c97a; --green-bg: #11291a; --green-line: #1f4a2e;
+    --orange: #e0a44a; --orange-bg: #2a2110; --orange-line: #4d3a16;
+    --blue: #74a6f5; --blue-bg: #121f33; --blue-line: #23395c;
+    --slate: #9aa6b5; --slate-bg: #1a1f27; --slate-line: #333c48;
+    --red: #ef6f62; --red-bg: #2c1613; --red-line: #532722;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px -6px rgba(0, 0, 0, 0.6);
+    --shadow-md: 0 18px 40px -20px rgba(0, 0, 0, 0.8);
     color-scheme: dark;
   }
 
@@ -54,135 +89,254 @@
   html, body { margin: 0; padding: 0; }
   body {
     min-height: 100dvh; background: var(--bg); color: var(--ink);
-    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-    font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+    font-family: var(--font-ui); font-size: 14px; line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    padding-left: var(--side-w); padding-top: var(--top-h);
+    transition: padding-left 0.3s var(--ease);
   }
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 72px; }
-
-  header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
-  h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: 0; }
-  .root { font-size: 13px; color: var(--muted); }
-  .stamp { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
-
-  .stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
-  .stat {
-    background: var(--card); border: 1px solid var(--line);
-    border-radius: 14px; padding: 11px 15px; min-width: 96px;
+  button, input { font: inherit; color: inherit; }
+  :focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--brand) 55%, transparent);
+    outline-offset: 2px; border-radius: 8px;
   }
-  .stat b { display: block; font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; }
-  .stat span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-  .stat.active b { color: var(--pos); }
-  .stat.stalled b { color: var(--sun); }
-  .stat.dirty b { color: var(--b); }
 
-  .controls {
-    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-    background: var(--card); border: 1px solid var(--line);
-    border-radius: 14px; padding: 11px; margin-bottom: 18px;
+  /* ---------- shell ---------- */
+  .side {
+    position: fixed; inset: 0 auto 0 0; width: var(--side-w); z-index: 20;
+    background: var(--card); border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; padding: 16px 12px;
   }
-  input[type=search] {
-    flex: 1 1 200px; min-width: 0; font: inherit; font-size: 14px;
-    padding: 8px 11px; border-radius: 10px;
+  .brand {
+    display: flex; align-items: center; gap: 9px; padding: 4px 8px 18px;
+  }
+  .mark {
+    width: 26px; height: 26px; border-radius: 8px; flex: none;
+    background: var(--brand); color: var(--on-brand);
+    display: grid; place-items: center;
+    font-family: var(--font-display); font-weight: 800; font-size: 14px;
+  }
+  .brand b {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 16px; letter-spacing: -0.02em;
+  }
+
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .navItem {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    padding: 8px 10px; border-radius: 10px; border: 1px solid transparent;
+    background: none; cursor: pointer; color: var(--ink2);
+    font-weight: 600; font-size: 13.5px; text-align: left;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .navItem:hover { background: var(--soft); }
+  .navItem[aria-current='true'] {
+    background: var(--brand-tint); color: var(--brand-text);
+  }
+  .navItem .n {
+    margin-left: auto; font-family: var(--font-display);
+    font-variant-numeric: tabular-nums; font-size: 12.5px; color: var(--muted);
+  }
+  .navItem[aria-current='true'] .n { color: var(--brand-text); }
+  .swatch { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--muted); }
+  .swatch.active { background: var(--green); }
+  .swatch.stalled { background: var(--orange); }
+  .swatch.dead { background: var(--slate-line); }
+  .swatch.dirty { background: var(--blue); }
+  .swatch.all { background: var(--brand); }
+
+  .sideFoot {
+    margin-top: auto; padding: 10px 10px 0; border-top: 1px solid var(--line);
+    font-size: 11.5px; color: var(--muted); word-break: break-all;
+  }
+
+  /* ---------- top bar ---------- */
+  .top {
+    position: fixed; top: 0; right: 0; left: var(--side-w); height: var(--top-h);
+    z-index: 15; display: flex; align-items: center; gap: 12px;
+    padding: 0 22px; background: var(--glass);
+    backdrop-filter: saturate(1.6) blur(12px);
+    border-bottom: 1px solid var(--line);
+    transition: left 0.3s var(--ease);
+  }
+  .search { position: relative; flex: 1 1 340px; max-width: 460px; }
+  .search input {
+    width: 100%; padding: 9px 12px 9px 34px; border-radius: 11px;
     border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    font-size: 13.5px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
-  input[type=search]:focus { outline: 2px solid var(--b); outline-offset: -1px; }
-  .chip {
-    font: inherit; font-size: 13px; font-weight: 600; padding: 7px 13px;
-    border-radius: 10px; cursor: pointer;
-    border: 1px solid var(--line); background: var(--card); color: var(--ink2);
+  .search input:focus { border-color: var(--brand); box-shadow: var(--shadow-xs); outline: none; }
+  .search svg { position: absolute; left: 11px; top: 50%; translate: 0 -50%; color: var(--muted); }
+  .slash {
+    position: absolute; right: 9px; top: 50%; translate: 0 -50%;
+    font-size: 11px; color: var(--muted); border: 1px solid var(--line2);
+    border-radius: 5px; padding: 1px 5px; pointer-events: none;
   }
-  .chip:hover { border-color: var(--line2); }
-  .chip.on { background: var(--b); border-color: var(--b); color: var(--on-b); }
+  .live { margin-left: auto; display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+  .beat { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2.4s var(--ease) infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 
-  .grid {
-    display: grid; gap: 11px; align-items: start;
-    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  /* ---------- content ---------- */
+  main { padding: 22px 22px 80px; max-width: 1280px; }
+  h2 {
+    font-family: var(--font-display); font-size: 15px; font-weight: 700;
+    letter-spacing: -0.01em; margin: 0 0 11px; color: var(--ink);
   }
+
+  .stats { display: grid; gap: 11px; grid-template-columns: repeat(auto-fit, minmax(146px, 1fr)); margin-bottom: 26px; }
+  .stat {
+    position: relative; overflow: hidden; background: var(--card);
+    border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.25s var(--spring), box-shadow 0.25s ease;
+  }
+  .stat:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  /* A soft glow of the tile's colour in the corner. */
+  .stat::before {
+    content: ''; position: absolute; right: -46px; bottom: -70px;
+    width: 160px; height: 160px; border-radius: 50%;
+    background: radial-gradient(closest-side, var(--tone, transparent), transparent);
+    opacity: .5; pointer-events: none;
+  }
+  .stat b {
+    display: block; font-family: var(--font-display); font-size: 26px;
+    font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .stat span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+
+  .grid { display: grid; gap: 12px; align-items: start; grid-template-columns: repeat(auto-fill, minmax(324px, 1fr)); }
+
   .card {
-    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
-    padding: 14px 15px; cursor: pointer; text-align: left; font: inherit;
-    color: inherit; width: 100%; display: block;
-    transition: border-color .12s ease, transform .12s ease;
+    position: relative; width: 100%; text-align: left; cursor: pointer;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 16px; padding: 15px 16px; color: inherit;
+    box-shadow: var(--shadow-sm);
+    animation: rise 0.32s var(--spring) both; animation-delay: var(--d, 0ms);
+    transition: transform 0.25s var(--spring), box-shadow 0.25s ease, border-color 0.15s ease;
   }
-  .card:hover { border-color: var(--line2); transform: translateY(-1px); }
-  .card.open { border-color: var(--b); }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--line2); }
+  .card[aria-selected='true'] { border-color: var(--brand); box-shadow: var(--shadow-md); }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
 
-  .top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--muted); }
-  .dot.active { background: var(--pos); }
-  .dot.stalled { background: var(--sun); }
-  .dot.dead { background: var(--line2); }
-  .name { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
-  .stack { margin-left: auto; font-size: 11px; color: var(--muted); font-weight: 600; }
-  .summary {
-    font-size: 13px; color: var(--muted); margin-bottom: 9px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  .cardTop { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+  .cardTop .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .dot.active { background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
+  .dot.stalled { background: var(--orange); box-shadow: 0 0 0 3px var(--orange-bg); }
+  .dot.dead { background: var(--slate-line); }
+  .cardTop h3 {
+    margin: 0; font-family: var(--font-display); font-size: 15px;
+    font-weight: 700; letter-spacing: -0.015em;
   }
-  .meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; margin-bottom: 9px; }
-  .pill {
-    background: var(--soft); border-radius: 7px; padding: 2px 8px;
-    color: var(--ink2); font-weight: 600;
+  .stackTag {
+    margin-left: auto; font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--muted);
+    background: var(--soft); border-radius: 6px; padding: 2px 7px;
   }
-  .pill.dirty { background: var(--warn-bg); color: var(--sun); }
-  .pill.nogit { background: transparent; color: var(--muted); font-weight: 500; }
-  .note {
-    font-size: 13px; color: var(--ink2); border-left: 2px solid var(--line2);
-    padding-left: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  .desc {
+    font-size: 12.5px; color: var(--muted); margin: 0 0 10px;
+    display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
   }
-  .note.said { border-left-color: var(--b); }
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+  .tag {
+    font-size: 11.5px; font-weight: 600; border-radius: 7px; padding: 2.5px 8px;
+    background: var(--soft); color: var(--ink2); border: 1px solid transparent;
+    font-variant-numeric: tabular-nums;
+  }
+  .tag.warn { background: var(--orange-bg); color: var(--orange); border-color: var(--orange-line); }
+  .tag.ghost { background: transparent; color: var(--muted); border-color: var(--line); }
+  .said {
+    font-size: 12.5px; color: var(--ink2); line-height: 1.5;
+    border-left: 2px solid var(--line2); padding-left: 10px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .said.you { border-left-color: var(--brand); }
 
-  .detail {
-    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);
-    font-size: 13px; display: none;
-  }
-  .card.open .detail { display: block; }
-  .row { display: flex; gap: 10px; margin-bottom: 5px; }
-  .key { color: var(--muted); min-width: 56px; flex: none; font-size: 12px; }
-  .val { color: var(--ink2); min-width: 0; word-break: break-word; }
-  .val.clamp {
-    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .prompts { margin: 7px 0 0; padding: 0; list-style: none; }
-  .prompts li {
-    font-size: 12px; color: var(--ink2); padding: 4px 0 4px 11px;
-    border-left: 2px solid var(--bt); margin-bottom: 2px;
-  }
-  .path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+  .empty { text-align: center; color: var(--muted); padding: 72px 0; }
+  .empty b { display: block; font-family: var(--font-display); font-size: 16px; color: var(--ink2); margin-bottom: 4px; }
 
-  .empty { text-align: center; color: var(--muted); padding: 56px 0; }
-  footer { margin-top: 26px; font-size: 12px; color: var(--muted); text-align: center; }
+  /* ---------- drawer ---------- */
+  .scrim {
+    position: fixed; inset: 0; z-index: 30; background: rgba(12, 15, 20, 0.34);
+    animation: fade 0.2s var(--ease) both; backdrop-filter: blur(2px);
+  }
+  @keyframes fade { from { opacity: 0; } }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 31;
+    width: min(460px, 100%); background: var(--card);
+    border-left: 1px solid var(--line); box-shadow: var(--shadow-pop);
+    display: flex; flex-direction: column;
+    animation: slide 0.32s var(--spring) both;
+  }
+  @keyframes slide { from { opacity: 0; transform: translateX(26px); } }
+  .drawerHead {
+    padding: 18px 20px 14px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .drawerHead h3 {
+    margin: 0; font-family: var(--font-display); font-size: 19px;
+    font-weight: 800; letter-spacing: -0.02em;
+  }
+  .close {
+    margin-left: auto; border: 1px solid var(--line); background: var(--card);
+    border-radius: 9px; width: 30px; height: 30px; cursor: pointer;
+    color: var(--muted); display: grid; place-items: center; flex: none;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .close:hover { background: var(--soft); color: var(--ink); }
+  .drawerBody { padding: 16px 20px 28px; overflow-y: auto; }
+  .field { margin-bottom: 15px; }
+  .field > span {
+    display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+  }
+  .field p { margin: 0; font-size: 13px; color: var(--ink2); word-break: break-word; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .quotes { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .quotes li {
+    font-size: 12.5px; color: var(--ink2); line-height: 1.5;
+    background: var(--soft); border-radius: 10px; padding: 9px 11px;
+    border-left: 2px solid var(--brand);
+  }
 
-  @media (max-width: 560px) {
-    .wrap { padding: 16px; }
-    .grid { grid-template-columns: 1fr; }
+  @media (max-width: 900px) {
+    :root { --side-w: 0px; }
+    .side { transform: translateX(-100%); }
+    .top { left: 0; }
+    body { padding-left: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>whereami</h1>
-    <span class="root" id="root"></span>
-  </header>
-  <div class="stamp" id="stamp"></div>
 
-  <div class="stats" id="stats"></div>
+<aside class="side">
+  <div class="brand"><span class="mark">w</span><b>whereami</b></div>
+  <nav class="nav" id="nav"></nav>
+  <div class="sideFoot" id="root"></div>
+</aside>
 
-  <div class="controls">
+<div class="top">
+  <div class="search">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+      <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path>
+    </svg>
     <input type="search" id="q" placeholder="Search projects, notes, stacks…" autocomplete="off">
-    <button class="chip on" data-f="all">All</button>
-    <button class="chip" data-f="active">Active</button>
-    <button class="chip" data-f="stalled">Stalled</button>
-    <button class="chip" data-f="dead">Dead</button>
-    <button class="chip" data-f="dirty">Uncommitted</button>
+    <span class="slash">/</span>
   </div>
-
-  <div class="grid" id="grid"></div>
-  <div class="empty" id="empty" hidden>Nothing matches.</div>
-
-  <footer id="foot"></footer>
+  <div class="live"><span class="beat"></span><span id="stamp"></span></div>
 </div>
+
+<main>
+  <div class="stats" id="stats"></div>
+  <h2 id="heading">All projects</h2>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden><b>Nothing matches</b>Try a different filter or search.</div>
+</main>
+
+<div id="layer"></div>
 
 <script>
 const PAYLOAD = /*__DATA__*/{"root":"","generated":"","rows":[]};
@@ -192,6 +346,18 @@ let openName = null;
 
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
   c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const FILTERS = [
+  { k: "all", label: "All projects" },
+  { k: "active", label: "Active" },
+  { k: "stalled", label: "Stalled" },
+  { k: "dead", label: "Dead" },
+  { k: "dirty", label: "Uncommitted" },
+];
+
+const countOf = k => k === "all" ? DATA.rows.length
+  : k === "dirty" ? DATA.rows.filter(r => r.dirty).length
+  : DATA.rows.filter(r => r.status === k).length;
 
 function visible() {
   const term = document.getElementById("q").value.trim().toLowerCase();
@@ -204,79 +370,117 @@ function visible() {
   });
 }
 
-function card(r) {
-  const open = r.name === openName;
-  return `<button class="card ${open ? "open" : ""}" data-n="${esc(r.name)}">
-    <div class="top">
+function renderNav() {
+  document.getElementById("nav").innerHTML = FILTERS.map(f => `
+    <button class="navItem" data-f="${f.k}" aria-current="${filter === f.k}">
+      <span class="swatch ${f.k}"></span>${f.label}
+      <span class="n">${countOf(f.k)}</span>
+    </button>`).join("");
+}
+
+function renderStats() {
+  const tiles = [
+    { n: DATA.rows.length, l: "Projects", tone: "var(--brand-tint)" },
+    { n: countOf("active"), l: "Active", tone: "var(--green-bg)" },
+    { n: countOf("stalled"), l: "Stalled", tone: "var(--orange-bg)" },
+    { n: countOf("dead"), l: "Dead", tone: "var(--slate-bg)" },
+    { n: countOf("dirty"), l: "Uncommitted", tone: "var(--blue-bg)" },
+  ];
+  document.getElementById("stats").innerHTML = tiles.map(t =>
+    `<div class="stat" style="--tone:${t.tone}"><b>${t.n}</b><span>${t.l}</span></div>`).join("");
+}
+
+function card(r, i) {
+  return `<button class="card" data-n="${esc(r.name)}" style="--d:${Math.min(i * 22, 330)}ms"
+            aria-selected="${r.name === openName}">
+    <div class="cardTop">
       <span class="dot ${esc(r.status)}"></span>
-      <span class="name">${esc(r.name)}</span>
-      <span class="stack">${esc((r.stack || []).join(" · "))}</span>
+      <h3>${esc(r.name)}</h3>
+      ${(r.stack || []).length ? `<span class="stackTag">${esc(r.stack[0])}</span>` : ""}
     </div>
-    <div class="summary">${esc(r.summary || "—")}</div>
-    <div class="meta">
-      <span class="pill">${esc(r.ago)}</span>
+    <p class="desc">${esc(r.summary || "No description")}</p>
+    <div class="tags">
+      <span class="tag">${esc(r.ago)}</span>
       ${r.repo
-        ? `<span class="pill">${r.commits} commits</span>` +
-          (r.dirty ? `<span class="pill dirty">${r.dirty} uncommitted</span>` : "")
-        : `<span class="pill nogit">no git</span>`}
-      ${r.branch && r.branch !== "—" ? `<span class="pill">${esc(r.branch)}</span>` : ""}
+        ? `<span class="tag">${r.commits} commits</span>` +
+          (r.dirty ? `<span class="tag warn">${r.dirty} uncommitted</span>` : "")
+        : `<span class="tag ghost">no git</span>`}
     </div>
-    ${r.note ? `<div class="note ${r.note_said ? "said" : ""}">${esc(r.note)}</div>` : ""}
-    <div class="detail">
-      <div class="row"><span class="key">path</span><span class="val path">${esc(r.path)}</span></div>
-      ${r.newest_file ? `<div class="row"><span class="key">file</span><span class="val path">${esc(r.newest_file)}</span></div>` : ""}
-      ${r.subject ? `<div class="row"><span class="key">commit</span><span class="val clamp">${esc(r.subject)}</span></div>` : ""}
-      ${r.touched ? `<div class="row"><span class="key">touched</span><span class="val">${esc(r.touched)}</span></div>` : ""}
-      ${(r.prompts || []).length
-        ? `<div class="row"><span class="key">you said</span><span class="val" style="flex:1">
-             <ul class="prompts">${r.prompts.map(p => `<li>${esc(p)}</li>`).join("")}</ul>
-           </span></div>` : ""}
-    </div>
+    ${r.note ? `<div class="said ${r.note_said ? "you" : ""}">${esc(r.note)}</div>` : ""}
   </button>`;
+}
+
+function renderDrawer() {
+  const layer = document.getElementById("layer");
+  const r = DATA.rows.find(x => x.name === openName);
+  if (!r) { layer.innerHTML = ""; return; }
+  const field = (label, body, cls) => body
+    ? `<div class="field"><span>${label}</span><p class="${cls || ""}">${esc(body)}</p></div>` : "";
+
+  layer.innerHTML = `
+    <div class="scrim" data-close></div>
+    <aside class="drawer" role="dialog" aria-label="${esc(r.name)}">
+      <div class="drawerHead">
+        <span class="dot ${esc(r.status)}" style="margin-top:7px"></span>
+        <div>
+          <h3>${esc(r.name)}</h3>
+          <p class="desc" style="margin:2px 0 0;-webkit-line-clamp:3">${esc(r.summary || "No description")}</p>
+        </div>
+        <button class="close" data-close aria-label="Close">✕</button>
+      </div>
+      <div class="drawerBody">
+        <div class="tags" style="margin-bottom:16px">
+          <span class="tag">${esc(r.status)}</span>
+          <span class="tag">${esc(r.ago)}</span>
+          ${r.repo ? `<span class="tag">${esc(r.branch || "—")}</span>
+                      <span class="tag">${r.commits} commits</span>` : `<span class="tag ghost">no git</span>`}
+          ${r.dirty ? `<span class="tag warn">${r.dirty} uncommitted</span>` : ""}
+          ${(r.stack || []).map(s => `<span class="tag">${esc(s)}</span>`).join("")}
+        </div>
+        ${field("Path", r.path, "mono")}
+        ${field("Last file edited", r.newest_file, "mono")}
+        ${field("File activity", r.touched)}
+        ${field("Last commit", r.subject)}
+        ${(r.prompts || []).length ? `<div class="field"><span>What you asked for here</span>
+          <ul class="quotes">${r.prompts.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>` : ""}
+      </div>
+    </aside>`;
 }
 
 function render() {
   document.getElementById("root").textContent = DATA.root;
   document.getElementById("stamp").textContent = "updated " + DATA.generated;
-
-  const all = DATA.rows;
-  const n = s => all.filter(r => r.status === s).length;
-  document.getElementById("stats").innerHTML = `
-    <div class="stat"><b>${all.length}</b><span>Projects</span></div>
-    <div class="stat active"><b>${n("active")}</b><span>Active</span></div>
-    <div class="stat stalled"><b>${n("stalled")}</b><span>Stalled</span></div>
-    <div class="stat"><b>${n("dead")}</b><span>Dead</span></div>
-    <div class="stat dirty"><b>${all.filter(r => r.dirty).length}</b><span>Uncommitted</span></div>`;
-
+  renderNav();
+  renderStats();
   const rows = visible();
+  document.getElementById("heading").textContent =
+    (FILTERS.find(f => f.k === filter) || {}).label + " · " + rows.length;
   document.getElementById("grid").innerHTML = rows.map(card).join("");
   document.getElementById("empty").hidden = rows.length > 0;
-  document.getElementById("foot").textContent =
-    rows.length + " of " + all.length + " shown";
+  renderDrawer();
 }
 
-document.getElementById("grid").addEventListener("click", e => {
-  const el = e.target.closest(".card");
-  if (!el) return;
-  openName = (openName === el.dataset.n) ? null : el.dataset.n;
-  render();
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-close]")) { openName = null; render(); return; }
+  const nav = e.target.closest(".navItem");
+  if (nav) { filter = nav.dataset.f; render(); return; }
+  const c = e.target.closest(".card");
+  if (c) { openName = c.dataset.n; render(); }
 });
-document.querySelectorAll(".chip").forEach(chip => {
-  chip.onclick = () => {
-    document.querySelectorAll(".chip").forEach(c => c.classList.remove("on"));
-    chip.classList.add("on");
-    filter = chip.dataset.f;
-    render();
-  };
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && openName) { openName = null; render(); }
+  if (e.key === "/" && document.activeElement.id !== "q") {
+    e.preventDefault(); document.getElementById("q").focus();
+  }
 });
-document.getElementById("q").oninput = render;
+document.getElementById("q").addEventListener("input", render);
 
-// When served, refresh quietly so the page is always current without a reload.
+// Served: refresh quietly so the tab stays correct without a reload.
 async function poll() {
   try {
     const res = await fetch("/api", { cache: "no-store" });
     if (res.ok) { DATA = await res.json(); render(); }
-  } catch (e) { /* static file, or server stopped */ }
+  } catch (e) { /* static file, or the server stopped */ }
 }
 if (location.protocol.startsWith("http")) setInterval(poll, 30000);
 
