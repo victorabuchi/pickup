@@ -233,6 +233,23 @@
   .card[aria-selected='true'] { border-color: var(--brand); box-shadow: var(--shadow-md); }
   @keyframes rise { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
 
+  .card { position: relative; }
+  .untrack {
+    position: absolute; top: 10px; right: 10px; width: 24px; height: 24px;
+    border-radius: 7px; border: 1px solid var(--line); background: var(--card);
+    color: var(--muted); cursor: pointer; display: grid; place-items: center;
+    opacity: 0; font-size: 14px; line-height: 1;
+    transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+  .card:hover .untrack { opacity: 1; }
+  .untrack:hover { background: var(--red-bg); color: var(--red); border-color: var(--red-line); }
+  .restore {
+    border: 1px solid var(--line); background: var(--card); color: var(--ink2);
+    border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 600;
+    cursor: pointer; margin-top: 10px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .restore:hover { background: var(--brand-tint); border-color: var(--brand); color: var(--brand-text); }
   .cardTop { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
   .cardTop .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
   .dot.active { background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
@@ -419,15 +436,43 @@ const FILTERS = [
   { k: "stalled", label: "Stalled" },
   { k: "dead", label: "Dead" },
   { k: "dirty", label: "Uncommitted" },
+  { k: "untracked", label: "Not tracked" },
 ];
 
-const countOf = k => k === "all" ? DATA.rows.length
+let untracked = [];
+const served = location.protocol.startsWith("http");
+
+async function loadUntracked() {
+  if (!served) return;
+  try {
+    const res = await fetch("/api?ignored=1", { cache: "no-store" });
+    if (res.ok) { untracked = (await res.json()).rows || []; render(); }
+  } catch (e) { /* ignore */ }
+}
+
+async function setTracked(name, ignored) {
+  if (!served) {
+    alert("Run `pickup --serve` to change tracking from here.\n\n" +
+          "Or use: pickup --ignore " + name);
+    return;
+  }
+  await fetch("/api/ignore", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, ignored }),
+  });
+  await Promise.all([poll(), loadUntracked()]);
+}
+
+const countOf = k => k === "untracked" ? untracked.length
+  : k === "all" ? DATA.rows.length
   : k === "dirty" ? DATA.rows.filter(r => r.dirty).length
   : DATA.rows.filter(r => r.status === k).length;
 
 function visible() {
   const term = document.getElementById("q").value.trim().toLowerCase();
-  return DATA.rows.filter(r => {
+  const source = filter === "untracked" ? untracked : DATA.rows;
+  return source.filter(r => {
+    if (filter === "untracked") return !term || r.name.toLowerCase().includes(term);
     if (filter === "dirty") { if (!r.dirty) return false; }
     else if (filter !== "all" && r.status !== filter) return false;
     if (!term) return true;
@@ -457,8 +502,16 @@ function renderStats() {
 }
 
 function card(r, i) {
+  if (filter === "untracked") {
+    return `<div class="card" style="--d:${Math.min(i * 22, 330)}ms">
+      <div class="cardTop"><span class="dot dead"></span><h3>${esc(r.name)}</h3></div>
+      <p class="desc">${esc(r.summary || "Not being tracked")}</p>
+      <button class="restore" data-track="${esc(r.name)}">Track again</button>
+    </div>`;
+  }
   return `<button class="card" data-n="${esc(r.name)}" style="--d:${Math.min(i * 22, 330)}ms"
             aria-selected="${r.name === openName}">
+    <span class="untrack" data-untrack="${esc(r.name)}" title="Stop tracking">&#10005;</span>
     <div class="cardTop">
       <span class="dot ${esc(r.status)}"></span>
       <h3>${esc(r.name)}</h3>
@@ -575,6 +628,10 @@ document.addEventListener("click", e => {
   if (e.target.closest("[data-close]")) { openName = null; render(); return; }
   const nav = e.target.closest(".navItem");
   if (nav) { filter = nav.dataset.f; render(); return; }
+  const u = e.target.closest("[data-untrack]");
+  if (u) { e.stopPropagation(); setTracked(u.dataset.untrack, true); return; }
+  const re = e.target.closest("[data-track]");
+  if (re) { setTracked(re.dataset.track, false); return; }
   const t = e.target.closest(".tab");
   if (t) { tab = t.dataset.tab; renderDrawer(); return; }
   const c = e.target.closest(".card");
@@ -610,7 +667,7 @@ async function poll() {
     if (res.ok) { DATA = await res.json(); render(); }
   } catch (e) { /* static file, or the server stopped */ }
 }
-if (location.protocol.startsWith("http")) setInterval(poll, 30000);
+if (served) { setInterval(poll, 30000); loadUntracked(); }
 
 render();
 </script>

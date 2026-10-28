@@ -25,6 +25,8 @@ from pathlib import Path
 DEFAULT_ROOT = Path.home() / "Projects"
 CLAUDE_PROJECTS = Path.home() / ".claude" / "projects"
 CACHE_DIR = Path.home() / ".cache" / "pickup"
+CONFIG_DIR = Path.home() / ".config" / "pickup"
+CONFIG_PATH = CONFIG_DIR / "config.json"
 CACHE_PATH = CACHE_DIR / "cache.json"
 
 # Directories that are never interesting and are often enormous. Walking into
@@ -447,14 +449,19 @@ def scan_project(project: Path) -> dict:
     return row
 
 
-def discover(root: Path) -> list:
+def discover(root: Path, include_ignored: bool = False) -> list:
     if not root.is_dir():
         sys.exit(f"no such directory: {root}")
+    ignored = {n.lower() for n in load_config()["ignored"]}
     found = []
     try:
         for entry in sorted(root.iterdir()):
-            if entry.is_dir() and not entry.name.startswith("."):
-                found.append(entry)
+            if not entry.is_dir() or entry.name.startswith("."):
+                continue
+            hidden = is_ignored(entry, ignored)
+            if hidden != include_ignored:
+                continue
+            found.append(entry)
     except OSError as exc:
         sys.exit(f"cannot read {root}: {exc}")
     return found
@@ -482,6 +489,52 @@ def cache_key(project: Path) -> str:
     return f"{stamp:.0f}:{newest:.0f}"
 
 
+# ----------------------------------------------------------------- config
+
+
+def load_config() -> dict:
+    """User choices that outlive the cache — chiefly what not to track."""
+    try:
+        data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        data = {}
+    data.setdefault("ignored", [])
+    return data
+
+
+def save_config(config: dict) -> None:
+    try:
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = CONFIG_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps(config, indent=2), encoding="utf-8")
+        tmp.replace(CONFIG_PATH)
+    except OSError as exc:
+        print(f"  could not save config: {exc}")
+
+
+def set_ignored(name: str, ignored: bool) -> bool:
+    config = load_config()
+    current = {n.lower() for n in config["ignored"]}
+    if ignored:
+        if name.lower() in current:
+            return False
+        config["ignored"].append(name)
+    else:
+        before = len(config["ignored"])
+        config["ignored"] = [n for n in config["ignored"] if n.lower() != name.lower()]
+        if len(config["ignored"]) == before:
+            return False
+    save_config(config)
+    return True
+
+
+def is_ignored(project: Path, ignored: set) -> bool:
+    """Ignored by config, or by a .pickupignore file sitting in the folder."""
+    if project.name.lower() in ignored:
+        return True
+    return (project / ".pickupignore").exists()
+
+
 def load_cache() -> dict:
     try:
         return json.loads(CACHE_PATH.read_text(encoding="utf-8"))
@@ -499,8 +552,8 @@ def save_cache(cache: dict) -> None:
         pass
 
 
-def scan_all(root: Path, use_cache: bool = True) -> list:
-    projects = discover(root)
+def scan_all(root: Path, use_cache: bool = True, include_ignored: bool = False) -> list:
+    projects = discover(root, include_ignored=include_ignored)
     cache = load_cache() if use_cache else {}
     fresh: dict = {}
     todo = []
@@ -750,10 +803,26 @@ def cmd_serve(root: Path, port: int) -> int:
             self.end_headers()
             self.wfile.write(body)
 
+        def do_POST(self) -> None:         # noqa: N802
+            try:
+                if not self.path.startswith("/api/ignore"):
+                    self.send_error(404)
+                    return
+                length = int(self.headers.get("Content-Length") or 0)
+                payload = json.loads(self.rfile.read(length) or b"{}")
+                name = str(payload.get("name") or "")
+                if not name:
+                    self.send_error(400, "name required")
+                    return
+                set_ignored(name, bool(payload.get("ignored", True)))
+                self._send(b'{"ok":true}', "application/json")
+            except Exception as exc:
+                self.send_error(500, str(exc)[:200])
+
         def do_GET(self) -> None:          # noqa: N802  (stdlib naming)
             try:
                 if self.path.startswith("/api"):
-                    rows = scan_all(root)
+                    rows = scan_all(root, include_ignored="ignored=1" in self.path)
                     body = json.dumps(to_payload(rows, root), ensure_ascii=False)
                     self._send(body.encode("utf-8"), "application/json; charset=utf-8")
                 elif self.path in ("/", "/index.html"):
@@ -813,9 +882,33 @@ def main() -> int:
     parser.add_argument("--serve", action="store_true",
                         help="run a live dashboard you can leave open")
     parser.add_argument("--port", type=int, default=7777)
+    parser.add_argument("--ignore", metavar="NAME", help="stop tracking a project")
+    parser.add_argument("--unignore", metavar="NAME", help="track it again")
+    parser.add_argument("--ignored", action="store_true", help="list what is not tracked")
     args = parser.parse_args()
 
     root = Path(args.root).expanduser()
+
+    if args.ignore:
+        ok = set_ignored(args.ignore, True)
+        print(f"\n  {'no longer tracking' if ok else 'already ignored'}: {args.ignore}\n")
+        return 0
+    if args.unignore:
+        ok = set_ignored(args.unignore, False)
+        print(f"\n  {'tracking again' if ok else 'was not ignored'}: {args.unignore}\n")
+        return 0
+    if args.ignored:
+        hidden = discover(root, include_ignored=True)
+        print()
+        if not hidden:
+            print("  tracking everything\n")
+        else:
+            for project in hidden:
+                marker = " (.pickupignore)" if (project / ".pickupignore").exists() else ""
+                print(f"  {project.name}{marker}")
+            print(f"\n  {len(hidden)} not tracked · --unignore NAME to restore\n")
+        return 0
+
     if args.serve:
         return cmd_serve(root, args.port)
 
