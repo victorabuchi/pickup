@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-whereami — where did I leave off?
+workcairn — where did I leave off?
 
 Reports the state of every project folder on this machine using signals that
 are already there: git, file activity, the README, and Claude Code's own
@@ -23,7 +23,7 @@ from pathlib import Path
 
 DEFAULT_ROOT = Path.home() / "Projects"
 CLAUDE_PROJECTS = Path.home() / ".claude" / "projects"
-CACHE_DIR = Path.home() / ".cache" / "whereami"
+CACHE_DIR = Path.home() / ".cache" / "workcairn"
 CACHE_PATH = CACHE_DIR / "cache.json"
 
 # Directories that are never interesting and are often enormous. Walking into
@@ -695,7 +695,7 @@ def cmd_serve(root: Path, port: int) -> int:
         sys.exit(f"cannot bind port {port}: {exc}")
 
     url = f"http://127.0.0.1:{port}/"
-    print(f"\n  whereami is live at {url}")
+    print(f"\n  workcairn is live at {url}")
     print("  leave this running; the page refreshes itself\n  ctrl-c to stop\n")
     import webbrowser
     webbrowser.open(url)

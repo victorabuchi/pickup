@@ -1,7 +1,7 @@
 # Prompts
 
 Paste these one at a time into Claude Code, run from
-`~/Projects/whereami`. Wait for each to finish and actually look at the output
+`~/Projects/workcairn`. Wait for each to finish and actually look at the output
 before moving on — the whole point is that it reports the truth about your
 folders, and you are the only one who can tell whether it does.
 
@@ -13,13 +13,13 @@ details.
 ## Prompt 1 — scanner and table
 
 ```
-Read SPEC.md in this folder. Build the first version of whereami: sources 1-4
+Read SPEC.md in this folder. Build the first version of workcairn: sources 1-4
 only (project discovery, git, file activity, identity), plus the status rules
-and the plain `whereami` table.
+and the plain `workcairn` table.
 
 Skip Claude history, URL checking, PLAN.md and the HTML dashboard for now.
 
-Python 3.9, standard library only, single file `whereami.py` with a `main()`.
+Python 3.9, standard library only, single file `workcairn.py` with a `main()`.
 Call git as a subprocess. Scan projects in a thread pool.
 
 Then run it against my real ~/Projects and show me the output. I have 28
@@ -60,7 +60,7 @@ which has a 55MB transcript.
 ## Prompt 3 — caching
 
 ```
-Add the caching described in SPEC.md: ~/.cache/whereami/cache.json, keyed on
+Add the caching described in SPEC.md: ~/.cache/workcairn/cache.json, keyed on
 each project directory's mtime plus the newest transcript's mtime, with
 --no-cache to bypass it.
 
@@ -76,10 +76,10 @@ immediately.
 ## Prompt 4 — detail view and plan progress
 
 ```
-Add `whereami <name>` (fuzzy prefix match) laid out like the statiku example in
+Add `workcairn <name>` (fuzzy prefix match) laid out like the statiku example in
 SPEC.md, and source 7, the PLAN.md checkbox progress.
 
-No project has a PLAN.md yet, so also add `whereami --init-plan <name>` which
+No project has a PLAN.md yet, so also add `workcairn --init-plan <name>` which
 writes a starter PLAN.md into that project with five empty checkboxes and a
 heading. That is the one exception to the read-only rule and it must refuse to
 overwrite an existing file.
@@ -126,7 +126,7 @@ reported against that project and the rest should still print.
 Add a shell alias so it is one word from anywhere:
 
 ```sh
-echo 'alias wai="python3 ~/Projects/whereami/whereami.py"' >> ~/.zshrc
+echo 'alias wai="python3 ~/Projects/workcairn/workcairn.py"' >> ~/.zshrc
 ```
 
 Then write a real `PLAN.md` in the three or four projects you actually intend

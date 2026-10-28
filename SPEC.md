@@ -1,9 +1,9 @@
-# whereami — spec
+# workcairn — spec
 
 A local command-line tool that answers one question for every project on this
 machine: **where did I leave off?**
 
-Rename it to whatever you like. `whereami` is the working name.
+Rename it to whatever you like. `workcairn` is the working name.
 
 ## The problem
 
@@ -15,7 +15,7 @@ and there is currently no way to know that without opening each one.
 ## What it does
 
 ```
-$ whereami
+$ workcairn
 
 PROJECT              STATUS   LAST         GIT                 NOTE
 notchlight           live     2026-10-24   122 commits clean   Sparkle appcast + 1.5 release
@@ -27,7 +27,7 @@ onshipy              dead     —            no git              newest file is 
 ```
 
 ```
-$ whereami statiku
+$ workcairn statiku
 
 statiku — live analytics for websites, SaaS and apps
   stack      node
@@ -96,15 +96,15 @@ session):
 
 | Command | Behaviour |
 | --- | --- |
-| `whereami` | table of every project, most recently active first |
-| `whereami <name>` | detail view for one project (fuzzy prefix match) |
-| `whereami --json` | machine-readable, same data |
-| `whereami --dead` | only projects with no activity in 90+ days |
-| `whereami --dirty` | only projects with uncommitted changes |
-| `whereami --check-urls` | include liveness checks |
-| `whereami --open` | write and open an HTML dashboard |
-| `whereami --root <path>` | scan somewhere other than `~/Projects` |
-| `whereami --no-cache` | ignore the cache |
+| `workcairn` | table of every project, most recently active first |
+| `workcairn <name>` | detail view for one project (fuzzy prefix match) |
+| `workcairn --json` | machine-readable, same data |
+| `workcairn --dead` | only projects with no activity in 90+ days |
+| `workcairn --dirty` | only projects with uncommitted changes |
+| `workcairn --check-urls` | include liveness checks |
+| `workcairn --open` | write and open an HTML dashboard |
+| `workcairn --root <path>` | scan somewhere other than `~/Projects` |
+| `workcairn --no-cache` | ignore the cache |
 
 ## Constraints
 
@@ -113,7 +113,7 @@ session):
   annotations at runtime.
 - **Fast: under 2 seconds for 28 projects**, warm or cold. Scan projects in
   parallel with a thread pool. Cache per project in
-  `~/.cache/whereami/cache.json`, keyed on the project directory's mtime plus
+  `~/.cache/workcairn/cache.json`, keyed on the project directory's mtime plus
   the newest transcript's mtime. Liveness cached separately with its own TTL.
 - **Read-only.** It must never write inside a project directory. The only
   writes are its own cache and, with `--open`, an HTML file in the cache dir.
