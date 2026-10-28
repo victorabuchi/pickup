@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>whereami</title>
+<style>
+  /* Same token structure as pursecast, with its own accent. */
+  :root {
+    --b: #4338ca;
+    --b-hover: #3730a3;
+    --bt: #e0e7ff;
+    --ink: #14181f;
+    --ink2: #334155;
+    --muted: #6b7380;
+    --line: #e3e7ec;
+    --line2: #cbd3dc;
+    --bg: #f5f7fa;
+    --card: #fff;
+    --soft: #eef1f5;
+    --sun: #f5a524;
+    --neg: #dc2626;
+    --pos: #15803d;
+    --pos-bg: #e9f7ee;
+    --warn-bg: #fdf6e7;
+    --on-b: #fff;
+    --glass: rgba(255, 255, 255, 0.94);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --b: #a5b4fc; --b-hover: #c7d2fe; --bt: #1d2142;
+      --ink: #e7eaee; --ink2: #cbd5e1; --muted: #97a0ab;
+      --line: #262c34; --line2: #38414b;
+      --bg: #0d1015; --card: #151a20; --soft: #1c222a;
+      --sun: #f7b541; --neg: #f87171; --pos: #4ade80;
+      --pos-bg: #112a1b; --warn-bg: #251f0e;
+      --on-b: #10142b; --glass: rgba(21, 26, 32, 0.92);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme='dark'] {
+    --b: #a5b4fc; --b-hover: #c7d2fe; --bt: #1d2142;
+    --ink: #e7eaee; --ink2: #cbd5e1; --muted: #97a0ab;
+    --line: #262c34; --line2: #38414b;
+    --bg: #0d1015; --card: #151a20; --soft: #1c222a;
+    --sun: #f7b541; --neg: #f87171; --pos: #4ade80;
+    --pos-bg: #112a1b; --warn-bg: #251f0e;
+    --on-b: #10142b; --glass: rgba(21, 26, 32, 0.92);
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100dvh; background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 72px; }
+
+  header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+  h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: 0; }
+  .root { font-size: 13px; color: var(--muted); }
+  .stamp { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+  .stat {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 11px 15px; min-width: 96px;
+  }
+  .stat b { display: block; font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .stat.active b { color: var(--pos); }
+  .stat.stalled b { color: var(--sun); }
+  .stat.dirty b { color: var(--b); }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 11px; margin-bottom: 18px;
+  }
+  input[type=search] {
+    flex: 1 1 200px; min-width: 0; font: inherit; font-size: 14px;
+    padding: 8px 11px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  }
+  input[type=search]:focus { outline: 2px solid var(--b); outline-offset: -1px; }
+  .chip {
+    font: inherit; font-size: 13px; font-weight: 600; padding: 7px 13px;
+    border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink2);
+  }
+  .chip:hover { border-color: var(--line2); }
+  .chip.on { background: var(--b); border-color: var(--b); color: var(--on-b); }
+
+  .grid {
+    display: grid; gap: 11px; align-items: start;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 14px 15px; cursor: pointer; text-align: left; font: inherit;
+    color: inherit; width: 100%; display: block;
+    transition: border-color .12s ease, transform .12s ease;
+  }
+  .card:hover { border-color: var(--line2); transform: translateY(-1px); }
+  .card.open { border-color: var(--b); }
+
+  .top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--muted); }
+  .dot.active { background: var(--pos); }
+  .dot.stalled { background: var(--sun); }
+  .dot.dead { background: var(--line2); }
+  .name { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+  .stack { margin-left: auto; font-size: 11px; color: var(--muted); font-weight: 600; }
+  .summary {
+    font-size: 13px; color: var(--muted); margin-bottom: 9px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; margin-bottom: 9px; }
+  .pill {
+    background: var(--soft); border-radius: 7px; padding: 2px 8px;
+    color: var(--ink2); font-weight: 600;
+  }
+  .pill.dirty { background: var(--warn-bg); color: var(--sun); }
+  .pill.nogit { background: transparent; color: var(--muted); font-weight: 500; }
+  .note {
+    font-size: 13px; color: var(--ink2); border-left: 2px solid var(--line2);
+    padding-left: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .note.said { border-left-color: var(--b); }
+
+  .detail {
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);
+    font-size: 13px; display: none;
+  }
+  .card.open .detail { display: block; }
+  .row { display: flex; gap: 10px; margin-bottom: 5px; }
+  .key { color: var(--muted); min-width: 56px; flex: none; font-size: 12px; }
+  .val { color: var(--ink2); min-width: 0; word-break: break-word; }
+  .val.clamp {
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .prompts { margin: 7px 0 0; padding: 0; list-style: none; }
+  .prompts li {
+    font-size: 12px; color: var(--ink2); padding: 4px 0 4px 11px;
+    border-left: 2px solid var(--bt); margin-bottom: 2px;
+  }
+  .path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+
+  .empty { text-align: center; color: var(--muted); padding: 56px 0; }
+  footer { margin-top: 26px; font-size: 12px; color: var(--muted); text-align: center; }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 16px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>whereami</h1>
+    <span class="root" id="root"></span>
+  </header>
+  <div class="stamp" id="stamp"></div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="controls">
+    <input type="search" id="q" placeholder="Search projects, notes, stacks…" autocomplete="off">
+    <button class="chip on" data-f="all">All</button>
+    <button class="chip" data-f="active">Active</button>
+    <button class="chip" data-f="stalled">Stalled</button>
+    <button class="chip" data-f="dead">Dead</button>
+    <button class="chip" data-f="dirty">Uncommitted</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden>Nothing matches.</div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const PAYLOAD = /*__DATA__*/{"root":"","generated":"","rows":[]};
+let DATA = PAYLOAD;
+let filter = "all";
+let openName = null;
+
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
+  c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function visible() {
+  const term = document.getElementById("q").value.trim().toLowerCase();
+  return DATA.rows.filter(r => {
+    if (filter === "dirty") { if (!r.dirty) return false; }
+    else if (filter !== "all" && r.status !== filter) return false;
+    if (!term) return true;
+    return (r.name + " " + (r.summary || "") + " " + (r.note || "") + " " +
+            (r.stack || []).join(" ")).toLowerCase().includes(term);
+  });
+}
+
+function card(r) {
+  const open = r.name === openName;
+  return `<button class="card ${open ? "open" : ""}" data-n="${esc(r.name)}">
+    <div class="top">
+      <span class="dot ${esc(r.status)}"></span>
+      <span class="name">${esc(r.name)}</span>
+      <span class="stack">${esc((r.stack || []).join(" · "))}</span>
+    </div>
+    <div class="summary">${esc(r.summary || "—")}</div>
+    <div class="meta">
+      <span class="pill">${esc(r.ago)}</span>
+      ${r.repo
+        ? `<span class="pill">${r.commits} commits</span>` +
+          (r.dirty ? `<span class="pill dirty">${r.dirty} uncommitted</span>` : "")
+        : `<span class="pill nogit">no git</span>`}
+      ${r.branch && r.branch !== "—" ? `<span class="pill">${esc(r.branch)}</span>` : ""}
+    </div>
+    ${r.note ? `<div class="note ${r.note_said ? "said" : ""}">${esc(r.note)}</div>` : ""}
+    <div class="detail">
+      <div class="row"><span class="key">path</span><span class="val path">${esc(r.path)}</span></div>
+      ${r.newest_file ? `<div class="row"><span class="key">file</span><span class="val path">${esc(r.newest_file)}</span></div>` : ""}
+      ${r.subject ? `<div class="row"><span class="key">commit</span><span class="val clamp">${esc(r.subject)}</span></div>` : ""}
+      ${r.touched ? `<div class="row"><span class="key">touched</span><span class="val">${esc(r.touched)}</span></div>` : ""}
+      ${(r.prompts || []).length
+        ? `<div class="row"><span class="key">you said</span><span class="val" style="flex:1">
+             <ul class="prompts">${r.prompts.map(p => `<li>${esc(p)}</li>`).join("")}</ul>
+           </span></div>` : ""}
+    </div>
+  </button>`;
+}
+
+function render() {
+  document.getElementById("root").textContent = DATA.root;
+  document.getElementById("stamp").textContent = "updated " + DATA.generated;
+
+  const all = DATA.rows;
+  const n = s => all.filter(r => r.status === s).length;
+  document.getElementById("stats").innerHTML = `
+    <div class="stat"><b>${all.length}</b><span>Projects</span></div>
+    <div class="stat active"><b>${n("active")}</b><span>Active</span></div>
+    <div class="stat stalled"><b>${n("stalled")}</b><span>Stalled</span></div>
+    <div class="stat"><b>${n("dead")}</b><span>Dead</span></div>
+    <div class="stat dirty"><b>${all.filter(r => r.dirty).length}</b><span>Uncommitted</span></div>`;
+
+  const rows = visible();
+  document.getElementById("grid").innerHTML = rows.map(card).join("");
+  document.getElementById("empty").hidden = rows.length > 0;
+  document.getElementById("foot").textContent =
+    rows.length + " of " + all.length + " shown";
+}
+
+document.getElementById("grid").addEventListener("click", e => {
+  const el = e.target.closest(".card");
+  if (!el) return;
+  openName = (openName === el.dataset.n) ? null : el.dataset.n;
+  render();
+});
+document.querySelectorAll(".chip").forEach(chip => {
+  chip.onclick = () => {
+    document.querySelectorAll(".chip").forEach(c => c.classList.remove("on"));
+    chip.classList.add("on");
+    filter = chip.dataset.f;
+    render();
+  };
+});
+document.getElementById("q").oninput = render;
+
+// When served, refresh quietly so the page is always current without a reload.
+async function poll() {
+  try {
+    const res = await fetch("/api", { cache: "no-store" });
+    if (res.ok) { DATA = await res.json(); render(); }
+  } catch (e) { /* static file, or server stopped */ }
+}
+if (location.protocol.startsWith("http")) setInterval(poll, 30000);
+
+render();
+</script>
+</body>
+</html>

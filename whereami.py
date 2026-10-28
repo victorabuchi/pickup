@@ -581,6 +581,131 @@ def render_detail(row: dict) -> None:
     print()
 
 
+# ----------------------------------------------------------------- dashboard
+
+TEMPLATE = Path(__file__).resolve().parent / "dashboard_template.html"
+PLACEHOLDER = '/*__DATA__*/{"root":"","generated":"","rows":[]}'
+
+
+def to_payload(rows: list, root: Path) -> dict:
+    """Flatten the scan into exactly what the page needs."""
+    out = []
+    for row in rows:
+        git = row.get("git") or {}
+        files = row.get("files") or {}
+        ident = row.get("identity") or {}
+        claude = row.get("claude") or {}
+        counts = files.get("counts") or {}
+
+        touched = ""
+        if counts:
+            touched = (f"{counts.get('7', 0)} in 7d · {counts.get('30', 0)} in 30d · "
+                       f"{counts.get('120', 0)} in 120d")
+
+        note = note_for(row)
+        prompts = claude.get("prompts") or []
+        said = bool(prompts) and note in prompts
+
+        out.append({
+            "name": row["name"],
+            "path": row["path"],
+            "status": row["status"],
+            "ago": ago(row.get("last_activity") or 0),
+            "summary": ident.get("summary") or ident.get("title") or "",
+            "stack": ident.get("stack") or [],
+            "repo": bool(git.get("repo")),
+            "commits": git.get("commits", 0),
+            "dirty": git.get("dirty", 0),
+            "branch": git.get("branch", ""),
+            "subject": git.get("subject", ""),
+            "newest_file": files.get("newest_file", ""),
+            "touched": touched,
+            "note": note,
+            "note_said": said,
+            "prompts": prompts[:5],
+        })
+    return {
+        "root": str(root),
+        "generated": datetime.now().strftime("%H:%M:%S"),
+        "rows": out,
+    }
+
+
+def render_html(rows: list, root: Path) -> str:
+    try:
+        template = TEMPLATE.read_text(encoding="utf-8")
+    except OSError:
+        sys.exit(f"missing template: {TEMPLATE}")
+    if PLACEHOLDER not in template:
+        sys.exit("dashboard_template.html no longer contains the data placeholder")
+    blob = json.dumps(to_payload(rows, root), ensure_ascii=False).replace("</", "<\\/")
+    return template.replace(PLACEHOLDER, blob)
+
+
+def cmd_open(rows: list, root: Path) -> int:
+    import webbrowser
+
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    page = CACHE_DIR / "dashboard.html"
+    page.write_text(render_html(rows, root), encoding="utf-8")
+    print(f"\n  wrote {page}")
+    webbrowser.open(page.as_uri())
+    return 0
+
+
+def cmd_serve(root: Path, port: int) -> int:
+    """
+    Serve a live dashboard.
+
+    Rescans on each request so the page is always current. Leave it running and
+    the browser tab stays correct without touching the terminal again.
+    """
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    class Handler(BaseHTTPRequestHandler):
+        def _send(self, body: bytes, content_type: str) -> None:
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self) -> None:          # noqa: N802  (stdlib naming)
+            try:
+                if self.path.startswith("/api"):
+                    rows = scan_all(root)
+                    body = json.dumps(to_payload(rows, root), ensure_ascii=False)
+                    self._send(body.encode("utf-8"), "application/json; charset=utf-8")
+                elif self.path in ("/", "/index.html"):
+                    rows = scan_all(root)
+                    self._send(render_html(rows, root).encode("utf-8"),
+                               "text/html; charset=utf-8")
+                else:
+                    self.send_error(404)
+            except Exception as exc:       # a bad project must not kill the server
+                self.send_error(500, str(exc)[:200])
+
+        def log_message(self, *args) -> None:
+            pass                            # quiet
+
+    try:
+        server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    except OSError as exc:
+        sys.exit(f"cannot bind port {port}: {exc}")
+
+    url = f"http://127.0.0.1:{port}/"
+    print(f"\n  whereami is live at {url}")
+    print("  leave this running; the page refreshes itself\n  ctrl-c to stop\n")
+    import webbrowser
+    webbrowser.open(url)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\n  stopped\n")
+    return 0
+
+
 def pick(rows: list, needle: str) -> list:
     needle = needle.lower()
     exact = [r for r in rows if r["name"].lower() == needle]
@@ -604,10 +729,22 @@ def main() -> int:
     parser.add_argument("--dirty", action="store_true", help="only uncommitted work")
     parser.add_argument("--no-cache", action="store_true")
     parser.add_argument("--no-colour", action="store_true")
+    parser.add_argument("--open", action="store_true", dest="open_page",
+                        help="write an HTML dashboard and open it")
+    parser.add_argument("--serve", action="store_true",
+                        help="run a live dashboard you can leave open")
+    parser.add_argument("--port", type=int, default=7777)
     args = parser.parse_args()
 
+    root = Path(args.root).expanduser()
+    if args.serve:
+        return cmd_serve(root, args.port)
+
     started = time.time()
-    rows = scan_all(Path(args.root).expanduser(), use_cache=not args.no_cache)
+    rows = scan_all(root, use_cache=not args.no_cache)
+
+    if args.open_page:
+        return cmd_open(rows, root)
 
     if args.project:
         matches = pick(rows, args.project)
