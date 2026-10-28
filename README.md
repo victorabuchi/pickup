@@ -1,12 +1,8 @@
-# workcairn
+# Pickup
 
 **Where did I leave off?**
 
-A cairn is the stack of stones walkers leave on a trail so the next person — or
-their own return trip — can find the way. This is that, for a machine full of
-half-finished projects.
-
-workcairn reads every project folder on your disk and tells you what state each
+Pickup reads every project folder on your disk and tells you what state each
 one is in, when you last touched it, and *what you were actually trying to do*
 — recovered from your own Claude Code transcripts, not just commit messages.
 
@@ -27,8 +23,8 @@ months and there was no way to know without opening each one.
 Nothing to install. Python 3 is already on macOS.
 
 ```sh
-git clone https://github.com/victorabuchi/workcairn.git ~/Projects/workcairn
-echo 'alias wc="python3 ~/Projects/workcairn/workcairn.py"' >> ~/.zshrc
+git clone https://github.com/victorabuchi/pickup.git ~/Projects/pickup
+echo 'alias pickup="python3 ~/Projects/pickup/pickup.py"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
@@ -37,7 +33,7 @@ source ~/.zshrc
 The dashboard is the main way in. Start it once and leave it:
 
 ```sh
-wc --serve
+pickup --serve
 ```
 
 It opens `http://127.0.0.1:7777`, rescans on every request, and the page
@@ -47,12 +43,12 @@ to the terminal.
 In the terminal:
 
 ```sh
-wc                  # table of every project, most recently active first
-wc statiku          # everything known about one project
-wc --dirty          # only projects with uncommitted work
-wc --dead           # candidates for deletion
-wc --open           # write a static HTML file instead of serving
-wc --json           # machine-readable, for piping somewhere else
+pickup                  # table of every project, most recently active first
+pickup statiku          # everything known about one project
+pickup --dirty          # only projects with uncommitted work
+pickup --dead           # candidates for deletion
+pickup --open           # write a static HTML file instead of serving
+pickup --json           # machine-readable, for piping somewhere else
 ```
 
 ### Options
@@ -119,7 +115,7 @@ Two things make that possible:
   55MB — one project's was exactly that — so the tool seeks to the end and
   reads back in chunks rather than parsing the whole thing.
 
-Results cache in `~/.cache/workcairn/cache.json`, keyed on each project
+Results cache in `~/.cache/pickup/cache.json`, keyed on each project
 directory's mtime plus its newest transcript's mtime, so a touched file shows
 up immediately and nothing else is rescanned.
 
@@ -139,7 +135,7 @@ surface and a line.
 
 ## Notes
 
-- Read-only. The only writes are `~/.cache/workcairn/` and, with `--open`, the
+- Read-only. The only writes are `~/.cache/pickup/` and, with `--open`, the
   HTML file in it.
 - One bad project never takes down a run — permission errors, broken symlinks,
   corrupt transcript lines and repos with zero commits are recorded against

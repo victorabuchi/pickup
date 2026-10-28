@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>workcairn</title>
+<title>pickup</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -172,6 +172,20 @@
     font-size: 11px; color: var(--muted); border: 1px solid var(--line2);
     border-radius: 5px; padding: 1px 5px; pointer-events: none;
   }
+  .themeBtn {
+    width: 34px; height: 34px; flex: none; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink2);
+    display: grid; place-items: center;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .themeBtn:hover { background: var(--soft); color: var(--ink); border-color: var(--line2); }
+  .themeBtn .moon { display: none; }
+  :root[data-theme='dark'] .themeBtn .moon { display: block; }
+  :root[data-theme='dark'] .themeBtn .sun { display: none; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) .themeBtn .moon { display: block; }
+    :root:not([data-theme='light']) .themeBtn .sun { display: none; }
+  }
   .live { margin-left: auto; display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
   .beat { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2.4s var(--ease) infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
@@ -263,7 +277,7 @@
   @keyframes fade { from { opacity: 0; } }
   .drawer {
     position: fixed; top: 0; right: 0; bottom: 0; z-index: 31;
-    width: min(460px, 100%); background: var(--card);
+    width: min(620px, 100%); background: var(--card);
     border-left: 1px solid var(--line); box-shadow: var(--shadow-pop);
     display: flex; flex-direction: column;
     animation: slide 0.32s var(--spring) both;
@@ -293,6 +307,49 @@
   .field p { margin: 0; font-size: 13px; color: var(--ink2); word-break: break-word; }
   .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
   .quotes { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .metrics {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px;
+  }
+  .metric {
+    background: var(--soft); border-radius: 11px; padding: 9px 11px;
+  }
+  .metric b {
+    display: block; font-family: var(--font-display); font-size: 16px;
+    font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  }
+  .metric span { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .tab {
+    border: none; background: none; cursor: pointer; padding: 7px 11px 9px;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .tab:hover { color: var(--ink2); }
+  .tab[aria-selected='true'] { color: var(--brand-text); border-bottom-color: var(--brand); }
+  .tab .c { color: var(--muted); font-weight: 500; font-size: 11.5px; margin-left: 3px; }
+
+  .log { display: flex; flex-direction: column; }
+  .logRow {
+    display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line);
+    align-items: baseline;
+  }
+  .logRow:last-child { border-bottom: none; }
+  .sha {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+    color: var(--brand-text); background: var(--brand-tint);
+    border-radius: 5px; padding: 1px 6px; flex: none;
+  }
+  .logMain { flex: 1; min-width: 0; }
+  .logSubject { font-size: 13px; color: var(--ink); line-height: 1.45; }
+  .logMeta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .when { font-size: 11.5px; color: var(--muted); flex: none; white-space: nowrap; }
+  .fpath {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+    color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .quoteWhen { font-size: 11px; color: var(--muted); margin-bottom: 3px; display: block; }
   .quotes li {
     font-size: 12.5px; color: var(--ink2); line-height: 1.5;
     background: var(--soft); border-radius: 10px; padding: 9px 11px;
@@ -313,7 +370,7 @@
 <body>
 
 <aside class="side">
-  <div class="brand"><span class="mark">w</span><b>workcairn</b></div>
+  <div class="brand"><span class="mark">p</span><b>pickup</b></div>
   <nav class="nav" id="nav"></nav>
   <div class="sideFoot" id="root"></div>
 </aside>
@@ -327,6 +384,15 @@
     <span class="slash">/</span>
   </div>
   <div class="live"><span class="beat"></span><span id="stamp"></span></div>
+  <button class="themeBtn" id="theme" aria-label="Switch theme" title="Switch theme">
+    <svg class="sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="4.2"></circle>
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+    </svg>
+    <svg class="moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/>
+    </svg>
+  </button>
 </div>
 
 <main>
@@ -410,39 +476,84 @@ function card(r, i) {
   </button>`;
 }
 
+let tab = "overview";
+
 function renderDrawer() {
   const layer = document.getElementById("layer");
   const r = DATA.rows.find(x => x.name === openName);
   if (!r) { layer.innerHTML = ""; return; }
+
   const field = (label, body, cls) => body
     ? `<div class="field"><span>${label}</span><p class="${cls || ""}">${esc(body)}</p></div>` : "";
+
+  const commits = r.history || [], edits = r.edits || [], prompts = r.prompts || [];
+
+  const panes = {
+    overview: `
+      <div class="metrics">
+        <div class="metric"><b>${r.commits || 0}</b><span>Commits</span></div>
+        <div class="metric"><b>${r.files_count || 0}</b><span>Files</span></div>
+        <div class="metric"><b>${esc(r.size || "—")}</b><span>On disk</span></div>
+        <div class="metric"><b>${r.dirty || 0}</b><span>Uncommitted</span></div>
+      </div>
+      ${field("Path", r.path, "mono")}
+      ${field("Last file edited", r.newest_file, "mono")}
+      ${field("File activity", r.touched)}
+      ${r.age ? field("First commit", r.first_commit + " · " + r.age) : ""}
+      ${field("Last commit", r.subject)}`,
+    commits: commits.length ? `<div class="log">${commits.map(c => `
+        <div class="logRow">
+          <span class="sha">${esc(c.hash)}</span>
+          <div class="logMain">
+            <div class="logSubject">${esc(c.subject)}</div>
+            <div class="logMeta">${esc(c.author)} · ${esc(c.date)}</div>
+          </div>
+          <span class="when">${esc(c.ago)}</span>
+        </div>`).join("")}</div>`
+      : `<p class="empty" style="padding:28px 0">No git history here.</p>`,
+    files: edits.length ? `<div class="log">${edits.map(e => `
+        <div class="logRow">
+          <span class="fpath">${esc(e.path)}</span>
+          <span class="when" style="margin-left:auto">${esc(e.ago)}</span>
+        </div>`).join("")}</div>`
+      : `<p class="empty" style="padding:28px 0">Nothing but ignored files.</p>`,
+    prompts: prompts.length ? `<ul class="quotes">${prompts.map(q => `
+        <li><span class="quoteWhen">${esc(q.ago)}</span>${esc(q.text)}</li>`).join("")}</ul>`
+      : `<p class="empty" style="padding:28px 0">No Claude sessions recorded here.</p>`,
+  };
+
+  const tabs = [
+    ["overview", "Overview", ""],
+    ["commits", "Commits", commits.length],
+    ["files", "Files", edits.length],
+    ["prompts", "You asked", prompts.length],
+  ];
 
   layer.innerHTML = `
     <div class="scrim" data-close></div>
     <aside class="drawer" role="dialog" aria-label="${esc(r.name)}">
       <div class="drawerHead">
         <span class="dot ${esc(r.status)}" style="margin-top:7px"></span>
-        <div>
+        <div style="min-width:0">
           <h3>${esc(r.name)}</h3>
-          <p class="desc" style="margin:2px 0 0;-webkit-line-clamp:3">${esc(r.summary || "No description")}</p>
+          <p class="desc" style="margin:2px 0 0;-webkit-line-clamp:2">${esc(r.summary || "No description")}</p>
         </div>
-        <button class="close" data-close aria-label="Close">✕</button>
+        <button class="close" data-close aria-label="Close">&#10005;</button>
       </div>
       <div class="drawerBody">
         <div class="tags" style="margin-bottom:16px">
           <span class="tag">${esc(r.status)}</span>
           <span class="tag">${esc(r.ago)}</span>
-          ${r.repo ? `<span class="tag">${esc(r.branch || "—")}</span>
-                      <span class="tag">${r.commits} commits</span>` : `<span class="tag ghost">no git</span>`}
+          ${r.repo ? `<span class="tag">${esc(r.branch || "—")}</span>` : `<span class="tag ghost">no git</span>`}
           ${r.dirty ? `<span class="tag warn">${r.dirty} uncommitted</span>` : ""}
-          ${(r.stack || []).map(s => `<span class="tag">${esc(s)}</span>`).join("")}
+          ${(r.stack || []).map(x => `<span class="tag">${esc(x)}</span>`).join("")}
         </div>
-        ${field("Path", r.path, "mono")}
-        ${field("Last file edited", r.newest_file, "mono")}
-        ${field("File activity", r.touched)}
-        ${field("Last commit", r.subject)}
-        ${(r.prompts || []).length ? `<div class="field"><span>What you asked for here</span>
-          <ul class="quotes">${r.prompts.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>` : ""}
+        <div class="tabs">
+          ${tabs.map(([k, label, count]) => `
+            <button class="tab" data-tab="${k}" aria-selected="${tab === k}">${label}${
+              count ? `<span class="c">${count}</span>` : ""}</button>`).join("")}
+        </div>
+        ${panes[tab] || panes.overview}
       </div>
     </aside>`;
 }
@@ -464,8 +575,10 @@ document.addEventListener("click", e => {
   if (e.target.closest("[data-close]")) { openName = null; render(); return; }
   const nav = e.target.closest(".navItem");
   if (nav) { filter = nav.dataset.f; render(); return; }
+  const t = e.target.closest(".tab");
+  if (t) { tab = t.dataset.tab; renderDrawer(); return; }
   const c = e.target.closest(".card");
-  if (c) { openName = c.dataset.n; render(); }
+  if (c) { openName = c.dataset.n; tab = "overview"; render(); }
 });
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && openName) { openName = null; render(); }
@@ -474,6 +587,21 @@ document.addEventListener("keydown", e => {
   }
 });
 document.getElementById("q").addEventListener("input", render);
+
+const THEME_KEY = "pickup:theme";
+try {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved) document.documentElement.dataset.theme = saved;
+} catch (e) { /* private window */ }
+
+document.getElementById("theme").addEventListener("click", () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme
+    ? root.dataset.theme === "dark"
+    : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+  try { localStorage.setItem(THEME_KEY, root.dataset.theme); } catch (e) {}
+});
 
 // Served: refresh quietly so the tab stays correct without a reload.
 async function poll() {

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-workcairn — where did I leave off?
+pickup — where did I leave off?
 
 Reports the state of every project folder on this machine using signals that
 are already there: git, file activity, the README, and Claude Code's own
@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -23,7 +24,7 @@ from pathlib import Path
 
 DEFAULT_ROOT = Path.home() / "Projects"
 CLAUDE_PROJECTS = Path.home() / ".claude" / "projects"
-CACHE_DIR = Path.home() / ".cache" / "workcairn"
+CACHE_DIR = Path.home() / ".cache" / "pickup"
 CACHE_PATH = CACHE_DIR / "cache.json"
 
 # Directories that are never interesting and are often enormous. Walking into
@@ -79,6 +80,14 @@ def ago(epoch: float) -> str:
     return f"{days // 365}y ago"
 
 
+def human_size(num: float) -> str:
+    for unit in ("B", "KB", "MB", "GB"):
+        if num < 1024 or unit == "GB":
+            return f"{num:.0f} {unit}" if unit != "GB" else f"{num / 1:.1f} GB"
+        num /= 1024
+    return f"{num:.0f} B"
+
+
 def trim(text: str, width: int) -> str:
     text = " ".join((text or "").split())
     if len(text) <= width:
@@ -106,6 +115,27 @@ def git_info(project: Path) -> dict:
             info["hash"] = parts[1]
             info["subject"] = parts[2]
 
+    # Recent history, for the drawer. One extra call, cached like everything else.
+    history = []
+    log = run_git(project, "log", "-25", "--format=%h%x00%ct%x00%s%x00%an")
+    for line in log.splitlines():
+        parts = line.split("\x00")
+        if len(parts) == 4:
+            try:
+                when = float(parts[1])
+            except ValueError:
+                when = 0.0
+            history.append({"hash": parts[0], "at": when,
+                            "subject": parts[2], "author": parts[3]})
+    info["history"] = history
+
+    root = run_git(project, "log", "--max-parents=0", "--format=%ct")
+    if root:
+        try:
+            info["first_commit"] = float(root.splitlines()[-1])
+        except (ValueError, IndexError):
+            pass
+
     info["branch"] = run_git(project, "rev-parse", "--abbrev-ref", "HEAD") or "—"
 
     status = run_git(project, "status", "--porcelain")
@@ -122,6 +152,8 @@ def file_activity(project: Path) -> dict:
     now = time.time()
     counts = {"7": 0, "30": 0, "120": 0}
     seen = 0
+    total_bytes = 0
+    recent: list = []          # (mtime, relative path) — trimmed at the end
 
     for dirpath, dirnames, filenames in os.walk(project, topdown=True, onerror=lambda e: None):
         dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS and not d.startswith(".")]
@@ -133,9 +165,11 @@ def file_activity(project: Path) -> dict:
                 break
             full = os.path.join(dirpath, name)
             try:
-                mtime = os.stat(full, follow_symlinks=False).st_mtime
+                stat = os.stat(full, follow_symlinks=False)
             except OSError:
                 continue
+            mtime = stat.st_mtime
+            total_bytes += stat.st_size
             age = now - mtime
             if age < 7 * DAY:
                 counts["7"] += 1
@@ -143,6 +177,7 @@ def file_activity(project: Path) -> dict:
                 counts["30"] += 1
             if age < 120 * DAY:
                 counts["120"] += 1
+            recent.append((mtime, full))
             if mtime > newest_mtime:
                 newest_mtime, newest_path = mtime, full
         if seen > MAX_FILES:
@@ -154,7 +189,33 @@ def file_activity(project: Path) -> dict:
             rel = str(Path(newest_path).relative_to(project))
         except ValueError:
             rel = os.path.basename(newest_path)
-    return {"newest_file": rel, "newest_mtime": newest_mtime, "counts": counts}
+    import heapq
+
+    top = heapq.nlargest(18, recent)
+    edits = []
+    for mtime, full in top:
+        try:
+            short = str(Path(full).relative_to(project))
+        except ValueError:
+            short = os.path.basename(full)
+        edits.append({"path": short, "at": mtime})
+
+    return {
+        "newest_file": rel,
+        "newest_mtime": newest_mtime,
+        "counts": counts,
+        "files": seen,
+        "bytes": total_bytes,
+        "edits": edits,
+    }
+
+
+def strip_markdown(text: str) -> str:
+    """READMEs are markdown; a card should show the words, not the syntax."""
+    text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", text)   # links
+    text = re.sub(r"[*_`]{1,3}", "", text)                   # bold, italic, code
+    text = re.sub(r"<[^>]+>", "", text)                      # stray html
+    return " ".join(text.split())
 
 
 def identity(project: Path) -> dict:
@@ -215,7 +276,11 @@ def identity(project: Path) -> dict:
     if (project / "prisma").is_dir():
         stack.append("prisma")
 
-    return {"title": title, "summary": summary, "stack": stack}
+    return {
+        "title": strip_markdown(title),
+        "summary": strip_markdown(summary),
+        "stack": stack,
+    }
 
 
 def tail_lines(path: Path, max_bytes: int = TAIL_BYTES) -> list:
@@ -311,7 +376,7 @@ def claude_info(project: Path) -> dict:
         if entry.get("type") == "last-prompt":
             text = entry.get("lastPrompt")
             if isinstance(text, str) and is_human_prompt(text):
-                prompts.append(" ".join(text.split()))
+                prompts.append((" ".join(text.split()), latest_ts))
         elif entry.get("type") == "user":
             content = (entry.get("message") or {}).get("content")
             text = ""
@@ -324,15 +389,16 @@ def claude_info(project: Path) -> dict:
                     if isinstance(part, dict) and part.get("type") == "text"
                 )
             if text.strip():
-                prompts.append(" ".join(text.split()))
+                prompts.append((" ".join(text.split()), latest_ts))
 
     deduped: list = []
-    for text in reversed(prompts):
-        if not is_human_prompt(text):
+    seen_text: set = set()
+    for text, when in reversed(prompts):
+        if not is_human_prompt(text) or text in seen_text:
             continue
-        if text not in deduped:
-            deduped.append(text)
-        if len(deduped) >= 5:
+        seen_text.add(text)
+        deduped.append({"text": text, "at": when})
+        if len(deduped) >= 12:
             break
 
     return {
@@ -474,11 +540,11 @@ def note_for(row: dict) -> str:
     prompts = row["claude"].get("prompts") or []
 
     if prompts and session_at >= commit_at:
-        return prompts[0]
+        return prompts[0]["text"]
     if row["git"].get("subject"):
         return row["git"]["subject"]
     if prompts:
-        return prompts[0]
+        return prompts[0]["text"]
     if row["status"] == "dead":
         newest = row["files"].get("newest_file")
         return f"last file: {newest}" if newest else "empty"
@@ -572,7 +638,7 @@ def render_detail(row: dict) -> None:
         print(f"    claude   {claude.get('count', 0)} session(s) · "
               f"last {ago(claude.get('last_session', 0))}")
         for prompt in (claude.get("prompts") or [])[:4]:
-            print(f"             · {trim(prompt, 64)}")
+            print(f"             · {trim(prompt['text'], 64)}")
     else:
         print("    claude   no sessions recorded")
 
@@ -604,7 +670,7 @@ def to_payload(rows: list, root: Path) -> dict:
 
         note = note_for(row)
         prompts = claude.get("prompts") or []
-        said = bool(prompts) and note in prompts
+        said = bool(prompts) and note == prompts[0]["text"]
 
         out.append({
             "name": row["name"],
@@ -622,7 +688,20 @@ def to_payload(rows: list, root: Path) -> dict:
             "touched": touched,
             "note": note,
             "note_said": said,
-            "prompts": prompts[:5],
+            "prompts": [{"text": p["text"], "ago": ago(p["at"])} for p in prompts[:10]],
+            "history": [
+                {"hash": c["hash"], "subject": c["subject"],
+                 "author": c["author"], "ago": ago(c["at"]), "date": ymd(c["at"])}
+                for c in (git.get("history") or [])[:25]
+            ],
+            "edits": [
+                {"path": e["path"], "ago": ago(e["at"])}
+                for e in (files.get("edits") or [])[:18]
+            ],
+            "files_count": files.get("files", 0),
+            "size": human_size(files.get("bytes", 0)),
+            "first_commit": ymd(git["first_commit"]) if git.get("first_commit") else "",
+            "age": ago(git["first_commit"]) if git.get("first_commit") else "",
         })
     return {
         "root": str(root),
@@ -695,7 +774,7 @@ def cmd_serve(root: Path, port: int) -> int:
         sys.exit(f"cannot bind port {port}: {exc}")
 
     url = f"http://127.0.0.1:{port}/"
-    print(f"\n  workcairn is live at {url}")
+    print(f"\n  pickup is live at {url}")
     print("  leave this running; the page refreshes itself\n  ctrl-c to stop\n")
     import webbrowser
     webbrowser.open(url)
