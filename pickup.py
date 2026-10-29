@@ -700,6 +700,134 @@ def render_detail(row: dict) -> None:
     print()
 
 
+# ----------------------------------------------------------------- cloud
+
+
+DEFAULT_API = "https://pickupwhere.com"
+
+
+def api_base() -> str:
+    return os.environ.get("PICKUP_API") or load_config().get("api") or DEFAULT_API
+
+
+def post_json(url: str, payload: dict, token: str = "") -> tuple:
+    """POST and return (status, parsed body). Standard library only."""
+    import urllib.error
+    import urllib.request
+
+    body = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(url, data=body, method="POST")
+    request.add_header("Content-Type", "application/json")
+    if token:
+        request.add_header("Authorization", f"Bearer {token}")
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return response.status, json.loads(response.read() or b"{}")
+    except urllib.error.HTTPError as exc:
+        try:
+            return exc.code, json.loads(exc.read() or b"{}")
+        except ValueError:
+            return exc.code, {}
+    except OSError as exc:
+        return 0, {"error": str(exc)}
+
+
+def cmd_login(root: Path) -> int:
+    """
+    Device-code sign-in, the same shape as the GitHub CLI.
+
+    The browser proves who you are; this machine only ever receives a token,
+    and never handles a password.
+    """
+    import platform
+    import webbrowser
+
+    base = api_base().rstrip("/")
+    status, body = post_json(
+        f"{base}/api/device/code",
+        {"deviceName": platform.node() or "this machine",
+         "platform": f"{platform.system()} {platform.release()}"},
+    )
+    if status != 200 or "code" not in body:
+        print(f"\n  could not reach {base} ({body.get('error') or status})\n")
+        return 1
+
+    code = body["code"]
+    url = body.get("verifyUrl") or f"{base}/login?code={code}"
+    print(f"\n  your code:  {code}")
+    print(f"  opening:    {url}")
+    print("\n  approve it in the browser; waiting…\n")
+    webbrowser.open(url)
+
+    deadline = time.time() + 15 * 60
+    while time.time() < deadline:
+        time.sleep(3)
+        status, body = post_json(f"{base}/api/device/poll", {"code": code})
+        if status == 200 and body.get("status") == "ready":
+            config = load_config()
+            config["token"] = body["token"]
+            config["api"] = base
+            save_config(config)
+            print("  signed in. this machine is connected.\n")
+            return cmd_sync(root)
+        if status in (404, 410):
+            print(f"  {body.get('status', 'expired')} — run login again\n")
+            return 1
+    print("  timed out waiting for approval\n")
+    return 1
+
+
+def cmd_sync(root: Path) -> int:
+    """Send what this machine found. Metadata only — never file contents."""
+    config = load_config()
+    token = config.get("token")
+    if not token:
+        print("\n  not signed in — run: pickup login\n")
+        return 1
+
+    rows = scan_all(root)
+    payload = to_payload(rows, root)
+    projects = []
+    for row, shaped in zip(rows, payload["rows"]):
+        projects.append({
+            "name": shaped["name"],
+            "path": shaped["path"],
+            "status": shaped["status"],
+            "summary": shaped["summary"],
+            "stack": shaped["stack"],
+            "branch": shaped["branch"],
+            "commits": shaped["commits"],
+            "dirty": shaped["dirty"],
+            "hasGit": shaped["repo"],
+            "note": shaped["note"],
+            "noteIsYours": shaped["note_said"],
+            "lastActivity": int(row.get("last_activity") or 0) or None,
+            "detail": {
+                "touched": shaped["touched"],
+                "newestFile": shaped["newest_file"],
+                "subject": shaped["subject"],
+                "size": shaped["size"],
+                "filesCount": shaped["files_count"],
+                "firstCommit": shaped["first_commit"],
+                "age": shaped["age"],
+                "history": shaped["history"],
+                "edits": shaped["edits"],
+                "prompts": shaped["prompts"] if config.get("sync_prompts") else [],
+            },
+        })
+
+    base = (config.get("api") or api_base()).rstrip("/")
+    status, body = post_json(f"{base}/api/agent/sync", {"projects": projects}, token)
+    if status == 200:
+        print(f"\n  synced {body.get('stored', len(projects))} projects to {base}\n")
+        return 0
+    if status == 401:
+        print("\n  this machine is no longer connected — run: pickup login\n")
+        return 1
+    print(f"\n  sync failed ({status}): {body.get('error') or body}\n")
+    return 1
+
+
 # ----------------------------------------------------------------- dashboard
 
 TEMPLATE = Path(__file__).resolve().parent / "dashboard_template.html"
@@ -885,6 +1013,10 @@ def main() -> int:
     parser.add_argument("--ignore", metavar="NAME", help="stop tracking a project")
     parser.add_argument("--unignore", metavar="NAME", help="track it again")
     parser.add_argument("--ignored", action="store_true", help="list what is not tracked")
+    parser.add_argument("--login", action="store_true", help="connect this machine to your account")
+    parser.add_argument("--sync", action="store_true", help="send this machine's projects")
+    parser.add_argument("--sync-prompts", choices=["on", "off"],
+                        help="include your prompt history in what is synced")
     args = parser.parse_args()
 
     root = Path(args.root).expanduser()
@@ -909,6 +1041,17 @@ def main() -> int:
             print(f"\n  {len(hidden)} not tracked · --unignore NAME to restore\n")
         return 0
 
+    if args.sync_prompts:
+        config = load_config()
+        config["sync_prompts"] = args.sync_prompts == "on"
+        save_config(config)
+        state = "included in" if config["sync_prompts"] else "kept out of"
+        print(f"\n  prompt history is now {state} what gets synced\n")
+        return 0
+    if args.login:
+        return cmd_login(root)
+    if args.sync:
+        return cmd_sync(root)
     if args.serve:
         return cmd_serve(root, args.port)
 
